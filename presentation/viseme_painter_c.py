@@ -24,7 +24,7 @@ class VisemePainterC:
         if mood not in ["normal"]:
             print("error: mood unknown: ", mood)
             return
-        
+
         image_path = "/resources/" + mood.lower() + "Bmp/" +  str(viseme_code) + ".bmp"
         self.draw_image(image_path)
 
@@ -37,7 +37,7 @@ class VisemePainterC:
 
 
     def clear(self):
-        
+
         if self.g:
             self.g.pop()
 

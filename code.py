@@ -6,16 +6,21 @@ import config
 from models.messages.speak_message import SpeakMessage
 from models.viseme import Viseme
 from presentation.viseme_painter_c import VisemePainterC
-#from services.message_service import MessageService
+from services.message_service import MessageService
+
+
+def handle_speak_message(msg):
+    message_queue.append(msg)
+
 
 if __name__ == '__main__':
-    
-    # setup   
+
+    # setup
 
     painter = VisemePainterC()
-    #message_service = MessageService(config.MQTT_CLIENT_NAME, config.MQTT_HOST, config.MQTT_PORT)
+    message_service = MessageService(config.MQTT_CLIENT_NAME, config.MQTT_HOST, config.MQTT_PORT)
     #message_service.subscribe_mycroft_status(handle_message)
-    #message_service.subscribe_mycroft_speak(handle_speak_message)
+    message_service.subscribe_mycroft_speak(handle_speak_message)
 
     message_queue = []
     draw_queue = []
@@ -29,27 +34,28 @@ if __name__ == '__main__':
     message2 = SpeakMessage("Hello World 2", "normal", time.monotonic()+ 30, visemes2)
     message_queue.append(message2)
 
-  
+
     # main loop
     while True:
         updated_queue = []
         now = time.monotonic()
         painter.loop()
-        
-        for msg in message_queue:
-            if msg.startTime <= now:
-                draw_queue = msg.visemes
-                draw_msg_start_time = msg.startTime
-            else:
-                updated_queue.append(msg)
+        message_service.loop()
 
-        message_queue = updated_queue
+        #for msg in message_queue:
+        #    if msg.startTime <= now:
+        #        draw_queue = msg.visemes
+        #        draw_msg_start_time = msg.startTime
+        #    else:
+        #        updated_queue.append(msg)
+
+        #message_queue = updated_queue
 
         # wenn timestamps bis wann?
-        if draw_queue:
-            if draw_msg_start_time + draw_queue[0].duration > now:
-                painter.draw_viseme(draw_queue[0].code, "normal")
-            else: 
-                draw_queue.pop(0)
-        else:
-            painter.clear()
+        #if draw_queue:
+        #    if draw_msg_start_time + draw_queue[0].duration > now:
+        #        painter.draw_viseme(draw_queue[0].code, "normal")
+        #    else:
+        #        draw_queue.pop(0)
+        #else:
+        #    painter.clear()

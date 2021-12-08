@@ -1,7 +1,14 @@
-from ledmatrix.models.messages.speak_message import SpeakMessage
-from ledmatrix.models.messages.status_message import StatusMessage
-from ledmatrix.models.viseme import Viseme
+from models.messages.speak_message import SpeakMessage
+from models.messages.status_message import StatusMessage
+from models.viseme import Viseme
 import adafruit_minimqtt.adafruit_minimqtt as mqtt
+
+from adafruit_esp32spi import adafruit_esp32spi
+from adafruit_esp32spi import adafruit_esp32spi_wifimanager
+import adafruit_esp32spi.adafruit_esp32spi_socket as socket
+from digitalio import DigitalInOut
+import board
+import busio
 
 try:
     from secrets import secrets
@@ -17,21 +24,26 @@ class MessageService:
     """Receive and send MQTT messages"""
 
     def __init__(self, client_name, host, port):
+        
+        esp32_cs = DigitalInOut(board.ESP_CS)
+        esp32_ready = DigitalInOut(board.ESP_BUSY)
+        esp32_reset = DigitalInOut(board.ESP_RESET)
+        
+        spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
+        esp = adafruit_esp32spi.ESP_SPIcontrol(spi, esp32_cs, esp32_ready, esp32_reset)
+        
+        wifi = adafruit_esp32spi_wifimanager.ESPSPI_WiFiManager(esp, secrets)
         print("Connecting to %s" % secrets["ssid"])
-        wifi.radio.connect(secrets["ssid"], secrets["password"])
+        wifi.connect()
         print("Connected to %s!" % secrets["ssid"])
 
-        # Create a socket pool
-        pool = socketpool.SocketPool(wifi.radio)
-
+        mqtt.set_socket(socket, esp)
         # Set up a MiniMQTT Client
-        self.mqtt_client = MQTT.MQTT(
-            broker=secrets["broker"],
-            port=secrets["port"],
-            username=secrets["aio_username"],
-            password=secrets["aio_key"],
-            socket_pool=pool,
-            ssl_context=ssl.create_default_context(),
+        self.mqtt_client = mqtt.MQTT(
+            broker="192.168.2.103",
+            port=1883,
+            client_id=client_name,
+            is_ssl=False,
         )
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_disconnect = self.on_disconnect
@@ -40,20 +52,21 @@ class MessageService:
 
         self.on_status_message = None
         self.on_speak_message = None
+        
+        #self.mqtt_client.publish(mqtt_topic, "Hello Broker!")
+    
 
     def subscribe_mycroft_status(self, on_status_message):
         self.mqtt_client.subscribe(config.TOPIC_STATUS, 0)
         self.on_status_message = on_status_message
-        self.mqtt_client.loop_forever()
 
     def subscribe_mycroft_speak(self, on_speak_message):
-        self.mqtt_client.subscribe(config.TOPIC_SPEAK, 0)
+        print("MqttService - subscribe_mycroft_speak")
+        self.mqtt_client.subscribe("webtec/#", 0)
         self.on_speak_message = on_speak_message
-        self.mqtt_client.loop_forever()
 
     def subscribe(self, topic):
         self.mqtt_client.subscribe(topic, 0)
-        self.mqtt_client.loop_forever()
 
     def disconnect(self):
         self.mqtt_client.disconnect()
@@ -61,12 +74,12 @@ class MessageService:
     def publish(self, topic, message):
         self.mqtt_client.publish(topic, message)
 
-    def on_message_received(self, client, userdata, message):
+    def on_message_received(self, client, topic, message):
         print("MqttService - on_message_received")
-        if message.topic == config.TOPIC_SPEAK:
+        if topic == config.TOPIC_SPEAK:
             if self.on_status_message is not None:
                 self.on_status_message(self.parse_speak(message))
-        elif message.topic == config.TOPIC_STATUS:
+        elif topic == config.TOPIC_STATUS:
             if self.on_speak_message is not None:
                 self.on_speak_message(self.parse_status(message))
         else:
@@ -92,4 +105,5 @@ class MessageService:
         return StatusMessage(json_dict['status'])
 
     def loop(self):
-        pass
+        print("loop")
+        self.mqtt_client.loop()
