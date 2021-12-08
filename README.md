@@ -1,8 +1,4 @@
-# letmatrix matrixportal
-
-
-
-
+# matrix matrixportal
 
 
 Source code
@@ -19,4 +15,5 @@ error
 Expected 01 but got 00
 
 https://github.com/adafruit/Adafruit_CircuitPython_MiniMQTT/issues/60
+
 
