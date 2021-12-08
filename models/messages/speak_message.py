@@ -6,3 +6,6 @@ class SpeakMessage:
         self.mood = mood
         self.startTime = startTime
         self.visemes = visemes
+        
+    def __str__(self):
+        return self.text + " " + self.mood + " at startTime:" + self.startTime + " with "+ self.visemes

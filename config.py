@@ -10,8 +10,8 @@ MQTT_PORT = 1883
 MQTT_CLIENT_NAME = "webtec-lab-ledmatrix32"
 
 # MQTT topics
-TOPIC_SPEAK = "webtec/lab/mycroft/status"
-TOPIC_STATUS = "webtec/lab/mycroft/viseme"
+TOPIC_SPEAK = "webtec/lab/mycroft/viseme"
+TOPIC_STATUS = "webtec/lab/mycroft/status"
 
 # resources configuration
 VISEME_ROOT_PATH = "/"

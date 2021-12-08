@@ -3,13 +3,6 @@ from models.messages.status_message import StatusMessage
 from models.viseme import Viseme
 import adafruit_minimqtt.adafruit_minimqtt as mqtt
 
-from adafruit_esp32spi import adafruit_esp32spi
-from adafruit_esp32spi import adafruit_esp32spi_wifimanager
-import adafruit_esp32spi.adafruit_esp32spi_socket as socket
-from digitalio import DigitalInOut
-import board
-import busio
-
 try:
     from secrets import secrets
 except ImportError:
@@ -23,19 +16,7 @@ import config
 class MessageService:
     """Receive and send MQTT messages"""
 
-    def __init__(self, client_name, host, port):
-        
-        esp32_cs = DigitalInOut(board.ESP_CS)
-        esp32_ready = DigitalInOut(board.ESP_BUSY)
-        esp32_reset = DigitalInOut(board.ESP_RESET)
-        
-        spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
-        esp = adafruit_esp32spi.ESP_SPIcontrol(spi, esp32_cs, esp32_ready, esp32_reset)
-        
-        wifi = adafruit_esp32spi_wifimanager.ESPSPI_WiFiManager(esp, secrets)
-        print("Connecting to %s" % secrets["ssid"])
-        wifi.connect()
-        print("Connected to %s!" % secrets["ssid"])
+    def __init__(self, client_name, host, port, socket, esp):
 
         mqtt.set_socket(socket, esp)
         # Set up a MiniMQTT Client
@@ -52,9 +33,7 @@ class MessageService:
 
         self.on_status_message = None
         self.on_speak_message = None
-        
-        #self.mqtt_client.publish(mqtt_topic, "Hello Broker!")
-    
+
 
     def subscribe_mycroft_status(self, on_status_message):
         self.mqtt_client.subscribe(config.TOPIC_STATUS, 0)
@@ -76,12 +55,12 @@ class MessageService:
 
     def on_message_received(self, client, topic, message):
         print("MqttService - on_message_received")
-        if topic == config.TOPIC_SPEAK:
+        if topic == config.TOPIC_STATUS:
             if self.on_status_message is not None:
-                self.on_status_message(self.parse_speak(message))
-        elif topic == config.TOPIC_STATUS:
+                self.on_status_message(self.parse_status(message))
+        elif topic == config.TOPIC_SPEAK:
             if self.on_speak_message is not None:
-                self.on_speak_message(self.parse_status(message))
+                self.on_speak_message(self.parse_speak(message))
         else:
             print("MqttService - error message unknown")
 
@@ -93,14 +72,14 @@ class MessageService:
 
     # json parsing
 
-    def parse_speak(json_string):
+    def parse_speak(self, json_string):
         json_dict = json.loads(json_string)
         visemes = []
         for viseme in json_dict['visemes']:
             visemes.append(Viseme(viseme['code'], viseme['duration']))
         return SpeakMessage(json_dict['text'], json_dict['mood'], json_dict['startTime'], visemes)
 
-    def parse_status(json_string):
+    def parse_status(self, json_string):
         json_dict = json.loads(json_string)
         return StatusMessage(json_dict['status'])
 
