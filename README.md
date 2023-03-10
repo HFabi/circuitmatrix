@@ -8,8 +8,7 @@ The mycroft visem information and timings are transmitted via MQTT-protocol to t
 This repository currrently only contains the visualization loop, running on the matrix portal, developed in [CircuitPython](https://circuitpython.org/).
 
 
-<img src="./doc/IMG_9553.JPG" width="430"/>
-<img src="./doc/IMG_8804.JPG" width="242"/>
+<img src="./doc/IMG_9553.JPG" width="400"/> <img src="./doc/IMG_8804.JPG" width="225"/>
 
 
 ## Setup
