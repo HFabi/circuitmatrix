@@ -1,2 +1,8 @@
+# python
 __pycache__
+
+# macos
+.DS_Store
+
+# secrets
 secrets.py
